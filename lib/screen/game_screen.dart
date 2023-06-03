@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:alemeno_assignment/colors.dart';
 import 'package:alemeno_assignment/screen/good_job_screen.dart';
 import 'package:alemeno_assignment/styles.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -44,6 +46,29 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  FirebaseStorage storage = FirebaseStorage.instance;
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  final String smallAnimalUrl='';
+  final String bigAnimalUrl='';
+  bool downloadDone = false;
+
+  Future<List<String>> getImages() async {
+    Reference ref = storage.ref().child('small_lion.jpg');
+    String smallAnimalUrl = await ref.getDownloadURL();
+    Reference ref2 = storage.ref().child('big_lion.jpg');
+    String bigAnimalUrl = await ref2.getDownloadURL();
+    return [smallAnimalUrl,bigAnimalUrl];
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery. of(context). size. width ;
@@ -75,13 +100,31 @@ class _GameScreenState extends State<GameScreen> {
                 width: 200,
                 height: 200,
                 margin: EdgeInsets.only(top: 50*hu),
-                child: (!_changeSize) ?
-                    Image.asset('assets/images/small_lion.jpg'):
-                    Container(
-                        width: 200,
-                        height: 200,
-                        child: Image.asset('assets/images/big_lion.jpg')
-              )
+                child: FutureBuilder(
+                    future: getImages(),
+                    builder: (context, snapshot) {
+
+                        if(snapshot.hasData){
+                          List<String>? links = snapshot.data;
+                          String sm = links!.first;
+                          String bg = links[1];
+                          return (!_changeSize) ?
+                          CachedNetworkImage(
+                              imageUrl: "$sm"
+                          ):
+                          Container(
+                              width: 200,
+                              height: 200,
+                              child: CachedNetworkImage(
+                                  imageUrl: "$bg"
+                              )
+                          );
+                        }else{
+                          return Container();
+                        }
+                    },
+                ),
+
             ),
           ),
           Align(
